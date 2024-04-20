@@ -1,8 +1,11 @@
 const productList = document.getElementById("productList");
 const cartItemsElement = document.getElementById("cartItems");
+const cartTotalElement = document.getElementById("cartTotal")
 
+ 
 
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
+console.log();
 
 // Ürünler
 const products = [
@@ -65,7 +68,6 @@ const products = [
 ];
 
 // Urunlerı ekrana renderlayacak foksıyon
-
 function renderProducts() {
   productList.innerHTML = products
     .map(
@@ -92,12 +94,10 @@ function renderProducts() {
     addToCartButton.addEventListener("click", addToCart);
   }
  
-  console.log(productList)
 }
 
 
-
-// sepete urun ekleme
+// Sepete urun ekleme
 function addToCart(event) {
   event.preventDefault();
   // Sepete ekle butonuna tıkladıgımızda sepete eklenecek urunun id'sine erisme
@@ -130,62 +130,83 @@ function addToCart(event) {
       console.log(cart);
     }
   }
-
-  saveToLocalStorage()
-
- 
+        saveToLocalStorage();
+        renderCartItems();
+        calculateCartTotal();
  
 }
 
-// localStoragea veri eklemek için kullandık
-function saveToLocalStorage() {
-  localStorage.setItem("cart", JSON.stringify(cart));
+// Cart dizisinden ve local storage'dan silmek istedigimiz urunu sildik ve sayfayi guncelledik
+function removeFromCart(event){
+  const productID = parseInt(event.target.dataset.id)
+ //filter ile cart dizisinden silmek istedigimiz urunu id'sine gore cart dizisinden sildik
+ cart = cart.filter((item) => item.id !== productID)
+
+
+saveToLocalStorage()   // local Storage'i guncelledi
+renderCartItems()      //guncellenen local storage'a gore ekrani guncelledi
+calculateCartTotal()   // sepetteki toplam fiyati hesaplar gunceller.
+}
+
+
+
+// Local Storage'a veri ekledik
+function saveToLocalStorage(){
+  localStorage.setItem("cart" , JSON.stringify(cart));
 }
 
 
 function renderCartItems() {
-  console.log("selam");
-  console.log(cartItemsElement)
-  cartItemsElement.innerHTML = cart
-  .map(
-    (item) => `
-  <div class="cart-item">
-   <img
-     src="${item.image}"
-     alt="${item.title}"
-   />
-   <div class="cart-item-info">
-     <h2 class="cart-item-title">${item.title}</h2>
-     <input
-       type="number"
-       min="1"
-       value="${item.quantity}"
-       class="cart-item-quantity"
-       data-id="${item.id}"
-     />
-   </div>
-   <h2>$${item.price * item.quantity}</h2>
-   <button class="remove-from-cart" data-id="${item.id}">Remove</button>
- </div>`
-  ).join("");
+  cartItemsElement.innerHTML =  cart.map((item) => (
+  `  <div class="cart-item">
+  <img
+    src="${item.image}"
+    alt="${item.title}"
+  />
+  <div class="cart-item-info">
+    <h2 class="cart-item-title">${item.title}</h2>
+    <input
+      type="number"
+      min="1"
+      value="${item.quantity}"
+      class="cart-item-quantity"
+      data-id="${item.id}"
+    />
+  </div>
+  <h2>$${item.price}</h2>
+  <button class="remove-from-cart" data-id="${item.id}" >Remove</button>
+</div>  `
+ )).join("")
 
-   console.log(cartItemsElement)
+   const removeButtons = document.getElementsByClassName("remove-from-cart");
+  for(let i = 0 ; i < removeButtons.length ; i++){
+    const removeButton = removeButtons[i]
+    removeButton.addEventListener("click", removeFromCart)
+  }
+
+}
+
+// sepetteki toplam fiyati hesaplar
+function calculateCartTotal(){
+  // reduce 2 deger ister 1.icerisinde yapacagimiz islem, 2.ise baslangic degeri
+ const total = cart.reduce((sum, item)=> sum + item.price * item.quantity, 0)
+
+ cartTotalElement.textContent = `Total: $${total}` ;
+ 
+
 }
 
 
-renderProducts();
-renderCartItems();
-console.log(window)
 
-// Sayfa cart.html sayfasındaysa renderCartItems fonksiyonun çalışması gerekiyor
-if (window.location.pathname.includes("cart.html")){
-  console.log("çalıştı")
-  renderCartItems()
-}else{       // Sayfa index.html sayfasındaysa renderProducts fonksiyonu çalışacak
-  renderProducts()
-}
+// sayfa cart.html sayfasinda ise rendercartitems fonksiyonu calisacak 
+  if(window.location.pathname.includes("cart.html")){
+    renderCartItems();
+    calculateCartTotal();
+  }else{
+    // sayfa index.html sayfasinda ise renderProducts fonksiyonu calisacak
+    renderProducts();
+  }
 
 
-// document.addEventListener("DOMContentLoaded", function() {
-//   renderProducts();
-// });
+  renderProducts();
+  calculateCartTotal();
