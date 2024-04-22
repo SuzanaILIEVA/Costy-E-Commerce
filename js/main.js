@@ -1,11 +1,13 @@
 const productList = document.getElementById("productList");
 const cartItemsElement = document.getElementById("cartItems");
-const cartTotalElement = document.getElementById("cartTotal")
+const cartTotalElement = document.getElementById("cartTotal");
+const addedbtn = document.getElementsByClassName("add-to-cart");
+let menu = document.querySelector(".navbar");
 
- 
+let menuIcon = document.querySelector("#menu-icon");
+menuIcon.addEventListener("click", () => menu.classList.toggle("open-menu"));
 
 let cart = JSON.parse(localStorage.getItem("cart")) || [];
-console.log();
 
 // Ürünler
 const products = [
@@ -93,9 +95,7 @@ function renderProducts() {
 
     addToCartButton.addEventListener("click", addToCart);
   }
- 
 }
-
 
 // Sepete urun ekleme
 function addToCart(event) {
@@ -127,38 +127,71 @@ function addToCart(event) {
 
       // yeni olusturdugumuz urunu push ile cart dizisine ekleriz
       cart.push(cartItem);
-      console.log(cart);
     }
   }
-        saveToLocalStorage();
-        renderCartItems();
-        calculateCartTotal();
- 
+
+  //   //*1.yol=  Add to cart BUTONUNA TIKLANINCA ICERIK ADDED OLARAK DEGISIR 1 SANIYE SONRA ESKI HALINE DONER
+  // const addToBtns = document.getElementsByClassName("add-to-cart")
+
+  //   for( let i = 0; i < addToBtns.length ; i++){
+  //    const addToBtn = addToBtns[i]
+  //    addToBtn.addEventListener("click", function(){
+  //     this.textContent = "Added"
+  //    })
+  // }
+
+  //* 2.yol= Add to cart BUTONUNA TIKLANINCA ICERIK ADDED OLARAK DEGISIR
+  event.target.textContent = "Added";
+
+  setTimeout(() => {
+    // her iki yoldada kullanilmali 1 SANIYE SONRA ESKI HALINE DONER
+    event.target.textContent = "Add to Cart";
+  }, 1000);
+
+  updateCartIcon();
+  saveToLocalStorage();
+  renderCartItems();
+  calculateCartTotal();
 }
 
 // Cart dizisinden ve local storage'dan silmek istedigimiz urunu sildik ve sayfayi guncelledik
-function removeFromCart(event){
-  const productID = parseInt(event.target.dataset.id)
- //filter ile cart dizisinden silmek istedigimiz urunu id'sine gore cart dizisinden sildik
- cart = cart.filter((item) => item.id !== productID)
+function removeFromCart(event) {
+  const productID = parseInt(event.target.dataset.id);
+  //filter ile cart dizisinden silmek istedigimiz urunu id'sine gore cart dizisinden sildik
+  cart = cart.filter((item) => item.id !== productID);
 
-
-saveToLocalStorage()   // local Storage'i guncelledi
-renderCartItems()      //guncellenen local storage'a gore ekrani guncelledi
-calculateCartTotal()   // sepetteki toplam fiyati hesaplar gunceller.
+  saveToLocalStorage(); // local Storage'i guncelledi
+  renderCartItems(); //guncellenen local storage'a gore ekrani guncelledi
+  calculateCartTotal(); // sepetteki toplam fiyati hesaplar gunceller.
+  updateCartIcon(); // sepetin toplam miktarini  gunceller
 }
 
+// inputun icindeki miktar degisince calisacak fonksiyon
+function changeQuantity(event) {
+  const productID = parseInt(event.target.dataset.id);
+  const quantity = parseInt(event.target.value);
 
+  if (quantity > 0) {
+    const cartItem = cart.find((item) => item.id === productID);
+    if (cartItem) {
+      cartItem.quantity = quantity;
+      saveToLocalStorage();
+      calculateCartTotal();
+      updateCartIcon();
+    }
+  }
+}
 
 // Local Storage'a veri ekledik
-function saveToLocalStorage(){
-  localStorage.setItem("cart" , JSON.stringify(cart));
+function saveToLocalStorage() {
+  localStorage.setItem("cart", JSON.stringify(cart));
 }
 
-
 function renderCartItems() {
-  cartItemsElement.innerHTML =  cart.map((item) => (
-  `  <div class="cart-item">
+  cartItemsElement.innerHTML = cart
+    .map(
+      (item) =>
+        `  <div class="cart-item">
   <img
     src="${item.image}"
     alt="${item.title}"
@@ -176,37 +209,53 @@ function renderCartItems() {
   <h2>$${item.price}</h2>
   <button class="remove-from-cart" data-id="${item.id}" >Remove</button>
 </div>  `
- )).join("")
+    )
+    .join("");
 
-   const removeButtons = document.getElementsByClassName("remove-from-cart");
-  for(let i = 0 ; i < removeButtons.length ; i++){
-    const removeButton = removeButtons[i]
-    removeButton.addEventListener("click", removeFromCart)
+  const removeButtons = document.getElementsByClassName("remove-from-cart");
+  for (let i = 0; i < removeButtons.length; i++) {
+    const removeButton = removeButtons[i];
+    removeButton.addEventListener("click", removeFromCart);
   }
 
+  const quantityInputs = document.getElementsByClassName("cart-item-quantity");
+  for (let i = 0; i < quantityInputs.length; i++) {
+    const quantityInput = quantityInputs[i];
+    quantityInput.addEventListener("change", changeQuantity);
+  }
+  updateCartIcon();
 }
 
 // sepetteki toplam fiyati hesaplar
-function calculateCartTotal(){
+function calculateCartTotal() {
   // reduce 2 deger ister 1.icerisinde yapacagimiz islem, 2.ise baslangic degeri
- const total = cart.reduce((sum, item)=> sum + item.price * item.quantity, 0)
+  const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
- cartTotalElement.textContent = `Total: $${total}` ;
- 
-
+  cartTotalElement.textContent = `Total: $${total.toFixed(2)}`;
 }
 
-
-
-// sayfa cart.html sayfasinda ise rendercartitems fonksiyonu calisacak 
-  if(window.location.pathname.includes("cart.html")){
-    renderCartItems();
-    calculateCartTotal();
-  }else{
-    // sayfa index.html sayfasinda ise renderProducts fonksiyonu calisacak
-    renderProducts();
-  }
-
-
-  renderProducts();
+// sayfa cart.html sayfasinda ise rendercartitems fonksiyonu calisacak
+if (window.location.pathname.includes("cart.html")) {
+  renderCartItems();
   calculateCartTotal();
+  updateCartIcon();
+} else {
+  // sayfa index.html sayfasinda ise renderProducts fonksiyonu calisacak
+  renderProducts();
+}
+
+function updateCartIcon() {
+  const cartIcon = document.getElementById("cart-icon");
+  const i = document.querySelector(".bx-shopping-bag");
+  const totalQuantity = cart.reduce((sum, item) => sum + item.quantity, 0);
+  i.setAttribute("data-quantity", totalQuantity);
+}
+updateCartIcon();
+
+function updateCartIconOnCartChange() {
+  updateCartIcon();
+}
+window.addEventListener("storage", updateCartIconOnCartChange);
+
+renderProducts();
+calculateCartTotal();
